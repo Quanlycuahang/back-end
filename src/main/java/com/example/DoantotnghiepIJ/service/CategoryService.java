@@ -1,15 +1,16 @@
 package com.example.DoantotnghiepIJ.service;
 
 
-import com.example.DoantotnghiepIJ.dto.CategoryDto.CategoryResponseDto;
-import com.example.DoantotnghiepIJ.dto.CategoryDto.CategorySimpleDto;
-import com.example.DoantotnghiepIJ.dto.CategoryDto.CreateCategoryDto;
-import com.example.DoantotnghiepIJ.dto.CategoryDto.UpdateCategoryDto;
+import com.example.DoantotnghiepIJ.dto.CategoryDto.*;
 import com.example.DoantotnghiepIJ.entity.Category;
 import com.example.DoantotnghiepIJ.exception.*;
 import com.example.DoantotnghiepIJ.mapper.CategoryMapper;
 import com.example.DoantotnghiepIJ.repository.CategoryRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -55,14 +56,19 @@ public class CategoryService {
                 .toList();
     }
     // GET ALL
-    public List<CategorySimpleDto> getAll() {
-        return categoryRepository.findByDeletedFalse()
-                .stream()
-                .map(CategoryMapper::toSimpleDto)
-                .toList();
-    }
+    public Page<Category> getCategories(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-    // GET BY ID
+        // 🔥 CASE 1: không search
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return categoryRepository.findByDeletedFalse(pageable);
+        }
+
+        // 🔥 CASE 2: có search
+        return categoryRepository.findByDeletedFalseAndNameContainingIgnoreCase(keyword, pageable);
+}
+
+        // GET BY ID
     public CategoryResponseDto getById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
@@ -94,4 +100,15 @@ public class CategoryService {
         category.setDeleted(true);
         categoryRepository.save(category);
     }
+
+//    dashboard
+public CategoryStatsResponse getCategoryStats() {
+    long total = categoryRepository.countAllCategories();
+    long empty = categoryRepository.countEmptyCategories();
+
+    return CategoryStatsResponse.builder()
+            .totalCategories(total)
+            .emptyCategories(empty)
+            .build();
+}
 }

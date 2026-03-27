@@ -2,8 +2,10 @@ package com.example.DoantotnghiepIJ.controller.admin;
 
 import com.example.DoantotnghiepIJ.dto.CategoryDto.CreateCategoryDto;
 import com.example.DoantotnghiepIJ.dto.CategoryDto.UpdateCategoryDto;
+import com.example.DoantotnghiepIJ.entity.Category;
 import com.example.DoantotnghiepIJ.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +24,13 @@ public class CategoryController {
 
     //  GET ALL (flat list)
     @GetMapping
-    public ResponseEntity<?> getAll() {
-        return ResponseEntity.ok(categoryService.getAll());
+    public ResponseEntity<?> getCategories(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<Category> result = categoryService.getCategories(keyword, page, size);
+        return ResponseEntity.ok(result);
     }
 
     //  GET TREE (QUAN TRỌNG)
@@ -50,5 +57,10 @@ public class CategoryController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return ResponseEntity.ok("Deleted category with id: " + id);
+    }
+    //    dashboard
+    @GetMapping("/stats")
+    public ResponseEntity<?> getStats() {
+        return ResponseEntity.ok(categoryService.getCategoryStats());
     }
 }
