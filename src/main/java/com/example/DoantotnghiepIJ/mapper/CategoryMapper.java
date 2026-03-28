@@ -33,7 +33,6 @@ public class CategoryMapper {
         dto.setPublicId(category.getPublicId());
         return dto;
     }
-
     public static CategoryResponseDto toDto(Category category) {
         if (category == null) return null;
 
@@ -43,10 +42,16 @@ public class CategoryMapper {
         dto.setDescription(category.getDescription());
         dto.setPublicId(category.getPublicId());
 
+        // 🔥 thêm dòng này
+        dto.setActive(category.getActive());
+
         if (category.getChildren() != null) {
             dto.setChildren(
                     category.getChildren()
                             .stream()
+                            // 🔥 filter chuẩn production
+                            .filter(c -> !Boolean.TRUE.equals(c.getDeleted())
+                                    && Boolean.TRUE.equals(c.getActive()))
                             .map(CategoryMapper::toDto)
                             .toList()
             );

@@ -31,7 +31,7 @@ public class CategoryService {
         Category category = new Category();
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
-
+        category.setActive(true);
         // set parent nếu có
         if (dto.getParentId() != null) {
             Category parent = categoryRepository.findById(dto.getParentId())
@@ -44,7 +44,13 @@ public class CategoryService {
 
     // ================= TREE =================
     public List<CategoryResponseDto> getTree() {
-        List<Category> roots = categoryRepository.findByParentIsNullAndDeletedFalse();
+
+        List<Category> roots = categoryRepository
+                .findByParentIsNullAndDeletedFalse()
+                .stream()
+                // 🔥 lọc active ngay từ root
+                .filter(c -> Boolean.TRUE.equals(c.getActive()))
+                .toList();
 
         return roots.stream()
                 .map(CategoryMapper::toDto)

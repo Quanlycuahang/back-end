@@ -13,4 +13,5 @@ public class CategoryResponseDto {
     private String description;
     private String publicId;
     private List<CategoryResponseDto> children;
+    private Boolean active;
 }
