@@ -58,9 +58,20 @@ public class CategoryService {
     }
 
     // ================= GET ALL (SEARCH + FILTER ACTIVE) =================
-    public Page<Category> getCategories(String keyword, Boolean active, int page, int size) {
+    public Page<Category> getCategories(String keyword, Boolean active, String sort, int page, int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // 🔥 xử lý sort
+        Sort sortOption;
+
+        if ("name_asc".equals(sort)) {
+            sortOption = Sort.by("name").ascending();
+        } else if ("name_desc".equals(sort)) {
+            sortOption = Sort.by("name").descending();
+        } else {
+            sortOption = Sort.by("createdAt").descending(); // mặc định
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortOption);
         String search = (keyword != null) ? keyword.trim() : null;
 
         // 🔥 CASE 1: không search
@@ -82,7 +93,6 @@ public class CategoryService {
         return categoryRepository
                 .findByDeletedFalseAndActiveAndNameContainingIgnoreCase(active, search, pageable);
     }
-
     // ================= GET BY ID =================
     public CategoryResponseDto getById(Long id) {
         Category category = categoryRepository.findById(id)

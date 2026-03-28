@@ -27,10 +27,11 @@ public class CategoryController {
     public Page<Category> getCategories(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return categoryService.getCategories(keyword, active, page, size);
+        return categoryService.getCategories(keyword, active, sort, page, size);
     }
     //  GET TREE (QUAN TRỌNG)
     @GetMapping("/tree")
