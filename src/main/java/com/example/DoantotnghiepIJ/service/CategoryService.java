@@ -82,7 +82,23 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
-        CategoryMapper.updateEntity(category, dto);
+        // update basic fields
+        category.setName(dto.getName());
+        category.setDescription(dto.getDescription());
+
+        // 🔥 xử lý parent
+        if (dto.getParentId() != null) {
+            if (dto.getParentId().equals(id)) {
+                throw new BadRequestException("Category cannot be its own parent");
+            }
+
+            Category parent = categoryRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new NotFoundException("Parent not found"));
+
+            category.setParent(parent);
+        } else {
+            category.setParent(null); // nếu chọn "--- 0 độ"
+        }
 
         return CategoryMapper.toDto(categoryRepository.save(category));
     }
