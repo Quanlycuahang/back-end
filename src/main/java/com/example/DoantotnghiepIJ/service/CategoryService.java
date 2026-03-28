@@ -1,20 +1,15 @@
 package com.example.DoantotnghiepIJ.service;
 
-
 import com.example.DoantotnghiepIJ.dto.CategoryDto.*;
 import com.example.DoantotnghiepIJ.entity.Category;
 import com.example.DoantotnghiepIJ.exception.*;
 import com.example.DoantotnghiepIJ.mapper.CategoryMapper;
 import com.example.DoantotnghiepIJ.repository.CategoryRepository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -25,7 +20,7 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    // CREATE
+    // ================= CREATE =================
     public CategoryResponseDto create(CreateCategoryDto dto) {
 
         categoryRepository.findByName(dto.getName())
@@ -46,29 +41,43 @@ public class CategoryService {
 
         return CategoryMapper.toDto(categoryRepository.save(category));
     }
-//    get tree (Danh mục cha con)
-    public List<CategoryResponseDto> getTree() {
 
+    // ================= TREE =================
+    public List<CategoryResponseDto> getTree() {
         List<Category> roots = categoryRepository.findByParentIsNullAndDeletedFalse();
 
         return roots.stream()
                 .map(CategoryMapper::toDto)
                 .toList();
     }
-    // GET ALL
-    public Page<Category> getCategories(String keyword, int page, int size) {
+
+    // ================= GET ALL (SEARCH + FILTER ACTIVE) =================
+    public Page<Category> getCategories(String keyword, Boolean active, int page, int size) {
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        String search = (keyword != null) ? keyword.trim() : null;
 
         // 🔥 CASE 1: không search
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return categoryRepository.findByDeletedFalse(pageable);
+        if (search == null || search.isEmpty()) {
+
+            if (active == null) {
+                return categoryRepository.findByDeletedFalse(pageable);
+            }
+
+            return categoryRepository.findByDeletedFalseAndActive(active, pageable);
         }
 
         // 🔥 CASE 2: có search
-        return categoryRepository.findByDeletedFalseAndNameContainingIgnoreCase(keyword, pageable);
-}
+        if (active == null) {
+            return categoryRepository
+                    .findByDeletedFalseAndNameContainingIgnoreCase(search, pageable);
+        }
 
-        // GET BY ID
+        return categoryRepository
+                .findByDeletedFalseAndActiveAndNameContainingIgnoreCase(active, search, pageable);
+    }
+
+    // ================= GET BY ID =================
     public CategoryResponseDto getById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
@@ -76,18 +85,33 @@ public class CategoryService {
         return CategoryMapper.toDto(category);
     }
 
-    // UPDATE
+    // ================= UPDATE =================
     public CategoryResponseDto update(Long id, UpdateCategoryDto dto) {
 
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
+        if (Boolean.TRUE.equals(category.getDeleted())) {
+            throw new BadRequestException("Cannot update deleted category");
+        }
+
         // update basic fields
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
 
+        // 🔥 update active
+        if (dto.getActive() != null) {
+            category.setActive(dto.getActive());
+
+            // optional: tắt luôn con
+            if (!dto.getActive()) {
+                disableChildren(category);
+            }
+        }
+
         // 🔥 xử lý parent
         if (dto.getParentId() != null) {
+
             if (dto.getParentId().equals(id)) {
                 throw new BadRequestException("Category cannot be its own parent");
             }
@@ -97,13 +121,13 @@ public class CategoryService {
 
             category.setParent(parent);
         } else {
-            category.setParent(null); // nếu chọn "--- 0 độ"
+            category.setParent(null);
         }
 
         return CategoryMapper.toDto(categoryRepository.save(category));
     }
 
-    // DELETE (soft)
+    // ================= DELETE (SOFT) =================
     public void delete(Long id) {
 
         Category category = categoryRepository.findById(id)
@@ -117,14 +141,44 @@ public class CategoryService {
         categoryRepository.save(category);
     }
 
-//    dashboard
-public CategoryStatsResponse getCategoryStats() {
-    long total = categoryRepository.countAllCategories();
-    long empty = categoryRepository.countEmptyCategories();
+    // ================= TOGGLE ACTIVE =================
+    public void toggleActive(Long id) {
 
-    return CategoryStatsResponse.builder()
-            .totalCategories(total)
-            .emptyCategories(empty)
-            .build();
-}
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
+
+        if (Boolean.TRUE.equals(category.getDeleted())) {
+            throw new BadRequestException("Cannot update deleted category");
+        }
+
+        category.setActive(!Boolean.TRUE.equals(category.getActive()));
+
+        // optional: tắt luôn con
+        if (!category.getActive()) {
+            disableChildren(category);
+        }
+
+        categoryRepository.save(category);
+    }
+
+    // ================= DASHBOARD =================
+    public CategoryStatsResponse getCategoryStats() {
+        long total = categoryRepository.countAllCategories();
+        long empty = categoryRepository.countEmptyCategories();
+
+        return CategoryStatsResponse.builder()
+                .totalCategories(total)
+                .emptyCategories(empty)
+                .build();
+    }
+
+    // ================= HELPER =================
+    private void disableChildren(Category category) {
+        if (category.getChildren() != null) {
+            for (Category child : category.getChildren()) {
+                child.setActive(false);
+                disableChildren(child);
+            }
+        }
+    }
 }

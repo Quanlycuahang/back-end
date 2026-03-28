@@ -24,15 +24,14 @@ public class CategoryController {
 
     //  GET ALL (flat list)
     @GetMapping
-    public ResponseEntity<?> getCategories(
+    public Page<Category> getCategories(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean active,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<Category> result = categoryService.getCategories(keyword, page, size);
-        return ResponseEntity.ok(result);
+        return categoryService.getCategories(keyword, active, page, size);
     }
-
     //  GET TREE (QUAN TRỌNG)
     @GetMapping("/tree")
     public ResponseEntity<?> getTree() {
@@ -62,5 +61,12 @@ public class CategoryController {
     @GetMapping("/stats")
     public ResponseEntity<?> getStats() {
         return ResponseEntity.ok(categoryService.getCategoryStats());
+    }
+
+//    status active/inactive
+    @PatchMapping("/{id}/toggle-active")
+    public ResponseEntity<?> toggleActive(@PathVariable Long id) {
+        categoryService.toggleActive(id);
+        return ResponseEntity.ok("Updated status successfully");
     }
 }

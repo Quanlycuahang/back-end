@@ -33,7 +33,8 @@ public class Category {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    @Column(nullable = false)
+    private Boolean active;
     //  CHA
     @ManyToOne
     @JoinColumn(name = "parent_id")
@@ -54,6 +55,7 @@ public class Category {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         deleted = false;
+        active = true;
     }
 
     @PreUpdate
