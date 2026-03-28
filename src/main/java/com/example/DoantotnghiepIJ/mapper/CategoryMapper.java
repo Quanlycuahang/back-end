@@ -50,8 +50,7 @@ public class CategoryMapper {
                     category.getChildren()
                             .stream()
                             // 🔥 filter chuẩn production
-                            .filter(c -> !Boolean.TRUE.equals(c.getDeleted())
-                                    && Boolean.TRUE.equals(c.getActive()))
+                            .filter(c -> !Boolean.TRUE.equals(c.getDeleted()))
                             .map(CategoryMapper::toDto)
                             .toList()
             );

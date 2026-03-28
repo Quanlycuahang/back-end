@@ -49,7 +49,7 @@ public class CategoryService {
                 .findByParentIsNullAndDeletedFalse()
                 .stream()
                 // 🔥 lọc active ngay từ root
-                .filter(c -> Boolean.TRUE.equals(c.getActive()))
+//                .filter(c -> Boolean.TRUE.equals(c.getActive()))
                 .toList();
 
         return roots.stream()
