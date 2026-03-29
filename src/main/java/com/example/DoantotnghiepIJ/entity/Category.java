@@ -37,6 +37,7 @@ public class Category {
     private Boolean active;
     //  DANH SÁCH MÓN
     @OneToMany(mappedBy = "category")
+    @JsonManagedReference
     private List<MenuItem> menuItems;
     //  CHA
     @ManyToOne
