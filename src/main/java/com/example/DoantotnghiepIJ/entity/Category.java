@@ -35,6 +35,9 @@ public class Category {
     private LocalDateTime updatedAt;
     @Column(nullable = false)
     private Boolean active;
+    //  DANH SÁCH MÓN
+    @OneToMany(mappedBy = "category")
+    private List<MenuItem> menuItems;
     //  CHA
     @ManyToOne
     @JoinColumn(name = "parent_id")

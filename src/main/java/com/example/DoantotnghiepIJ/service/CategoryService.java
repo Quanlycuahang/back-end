@@ -10,6 +10,8 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -196,5 +198,28 @@ public class CategoryService {
                 disableChildren(child);
             }
         }
+    }
+    public List<CategoryResponseDto> getCategoriesWithItemCount() {
+
+        List<Category> categories = categoryRepository.findByDeletedFalse();
+
+        // 🔥 lấy count từ DB (1 query)
+        List<Object[]> counts = categoryRepository.countItemsByCategory();
+
+        // map: categoryId -> count
+        Map<Long, Long> countMap = counts.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        return categories.stream().map(c -> {
+            CategoryResponseDto dto = CategoryMapper.toDto(c);
+
+            // 🔥 set item count
+            dto.setItemCount(countMap.getOrDefault(c.getId(), 0L));
+
+            return dto;
+        }).toList();
     }
 }

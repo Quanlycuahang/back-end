@@ -63,4 +63,14 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
             @Param("active") Boolean active,
             Pageable pageable
     );
+//    số lượng món trong mỗi danh mục (bao gồm cả danh mục con)
+@Query("""
+    SELECT c.id, COUNT(m.id)
+    FROM Category c
+    LEFT JOIN c.menuItems m
+        ON m.isDeleted = false
+    WHERE c.deleted = false
+    GROUP BY c.id
+""")
+List<Object[]> countItemsByCategory();
 }

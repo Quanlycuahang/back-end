@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -39,7 +40,9 @@ public class MenuItem {
     private Double discountPrice;
 
     private Boolean isAvailable;
-
+//    @ManyToOne
+//    @JoinColumn(name = "category_id")
+//    private Category category;
     private Boolean isCombo;
     @Column(name = "is_active")
     private Boolean isActive = true;

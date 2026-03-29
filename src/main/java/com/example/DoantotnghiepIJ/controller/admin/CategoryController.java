@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.controller.admin;
 
+import com.example.DoantotnghiepIJ.dto.CategoryDto.CategoryResponseDto;
 import com.example.DoantotnghiepIJ.dto.CategoryDto.CreateCategoryDto;
 import com.example.DoantotnghiepIJ.dto.CategoryDto.UpdateCategoryDto;
 import com.example.DoantotnghiepIJ.entity.Category;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/categories")
@@ -69,5 +72,9 @@ public class CategoryController {
     public ResponseEntity<?> toggleActive(@PathVariable Long id) {
         categoryService.toggleActive(id);
         return ResponseEntity.ok("Updated status successfully");
+    }
+    @GetMapping("/with-count")
+    public List<CategoryResponseDto> getCategoriesWithItemCount() {
+        return categoryService.getCategoriesWithItemCount();
     }
 }

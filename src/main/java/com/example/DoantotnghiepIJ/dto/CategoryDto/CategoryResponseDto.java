@@ -14,4 +14,5 @@ public class CategoryResponseDto {
     private String publicId;
     private List<CategoryResponseDto> children;
     private Boolean active;
+    private Long itemCount;
 }
