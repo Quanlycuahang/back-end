@@ -32,6 +32,8 @@ public class MenuItemService {
 
         String slug = generateSlug(dto.getSlug(), dto.getName());
 
+        int quantity = dto.getQuantity() != null ? dto.getQuantity() : 0;
+
         MenuItem item = MenuItem.builder()
                 .name(dto.getName())
                 .slug(slug)
@@ -39,13 +41,15 @@ public class MenuItemService {
                 .price(dto.getPrice())
                 .discountPrice(dto.getDiscountPrice())
                 .category(category)
+                .quantity(quantity)
+                .isAvailable(quantity > 0)
                 .isActive(true)
                 .build();
 
         return menuItemRepository.save(item);
     }
 
-    // ================== GET ALL (PAGING + SORT) ==================
+    // ================== GET ALL ==================
     public Page<MenuItem> getAll(int page, int size, String sortBy, String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ?
@@ -71,10 +75,9 @@ public class MenuItemService {
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        // check slug
-        if (!item.getSlug().equals(dto.getSlug())) {
-            String newSlug = generateSlug(dto.getSlug(), dto.getName());
-            item.setSlug(newSlug);
+        // slug
+        if (dto.getSlug() != null && !dto.getSlug().equals(item.getSlug())) {
+            item.setSlug(generateSlug(dto.getSlug(), dto.getName()));
         }
 
         item.setName(dto.getName());
@@ -82,12 +85,22 @@ public class MenuItemService {
         item.setPrice(dto.getPrice());
         item.setDiscountPrice(dto.getDiscountPrice());
         item.setCategory(category);
-        item.setIsActive(dto.getIsActive());
+
+        // update status
+        if (dto.getIsActive() != null) {
+            item.setIsActive(dto.getIsActive());
+        }
+
+        // update quantity
+        if (dto.getQuantity() != null) {
+            item.setQuantity(dto.getQuantity());
+            item.setIsAvailable(dto.getQuantity() > 0);
+        }
 
         return menuItemRepository.save(item);
     }
 
-    // ================== DELETE (SOFT) ==================
+    // ================== DELETE ==================
     public void delete(UUID id) {
         MenuItem item = getById(id);
         item.setIsDeleted(true);
@@ -101,39 +114,74 @@ public class MenuItemService {
         menuItemRepository.save(item);
     }
 
-    // ================== SEARCH + FILTER ==================
+    // ================== INCREASE STOCK ==================
+    public void increaseStock(UUID id, int amount) {
+
+        if (amount <= 0) throw new RuntimeException("Amount phải > 0");
+
+        MenuItem item = getById(id);
+
+        item.setQuantity(item.getQuantity() + amount);
+        item.setIsAvailable(true);
+
+        menuItemRepository.save(item);
+    }
+
+    // ================== DECREASE STOCK ==================
+    public void decreaseStock(UUID id, int amount) {
+
+        if (amount <= 0) throw new RuntimeException("Amount phải > 0");
+
+        MenuItem item = getById(id);
+
+        if (item.getQuantity() < amount) {
+            throw new RuntimeException("Không đủ hàng");
+        }
+
+        item.setQuantity(item.getQuantity() - amount);
+
+        if (item.getQuantity() <= 0) {
+            item.setIsAvailable(false);
+        }
+
+        menuItemRepository.save(item);
+    }
+
+    // ================== SEARCH ==================
     public Page<MenuItem> search(
             String keyword,
             Boolean isActive,
             UUID categoryId,
             int page,
-            int size
+            int size,
+            String sortBy,
+            String sortDir
     ) {
 
-        Pageable pageable = PageRequest.of(page, size);
+        Sort sort = sortDir.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() :
+                Sort.by(sortBy).ascending();
 
-        // CASE 1: full filter
-        if (keyword != null && isActive != null && categoryId != null) {
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        if (keyword == null || keyword.isBlank()) {
+            return menuItemRepository.findByIsDeletedFalse(pageable);
+        }
+
+        if (isActive != null && categoryId != null) {
             return menuItemRepository
                     .findByNameContainingIgnoreCaseAndIsActiveAndCategory_IdAndIsDeletedFalse(
                             keyword, isActive, categoryId, pageable);
         }
 
-        // CASE 2: keyword + status
-        if (keyword != null && isActive != null) {
+        if (isActive != null) {
             return menuItemRepository
                     .findByNameContainingIgnoreCaseAndIsActiveAndIsDeletedFalse(
                             keyword, isActive, pageable);
         }
 
-        // CASE 3: keyword
-        if (keyword != null) {
-            return menuItemRepository
-                    .findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword, pageable);
-        }
-
-        // DEFAULT
-        return menuItemRepository.findByIsDeletedFalse(pageable);
+        return menuItemRepository
+                .findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword, pageable);
     }
 
     // ================== UPLOAD IMAGE ==================
@@ -144,13 +192,11 @@ public class MenuItemService {
 
         MenuItem item = getById(menuItemId);
 
-        // thumbnail
         if (thumbnail != null && !thumbnail.isEmpty()) {
             Map result = cloudinaryService.upload(thumbnail);
             item.setThumbnail(result.get("secure_url").toString());
         }
 
-        // images
         if (images != null) {
             for (MultipartFile file : images) {
 
@@ -167,6 +213,19 @@ public class MenuItemService {
         }
 
         menuItemRepository.save(item);
+    }
+
+    // ================== DASHBOARD ==================
+    public Map<String, Long> getDashboardStats() {
+
+        long total = menuItemRepository.countByIsDeletedFalse();
+        long active = menuItemRepository.countByIsDeletedFalseAndIsActiveTrue();
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("total", total);
+        result.put("active", active);
+
+        return result;
     }
 
     // ================== SLUG ==================
@@ -186,18 +245,5 @@ public class MenuItemService {
         }
 
         return finalSlug;
-    }
-//    dashboard stats
-    public Map<String, Long> getDashboardStats() {
-
-        long total = menuItemRepository.countByIsDeletedFalse();
-
-        long active = menuItemRepository.countByIsDeletedFalseAndIsActiveTrue();
-
-        Map<String, Long> result = new HashMap<>();
-        result.put("total", total);
-        result.put("active", active);
-
-        return result;
     }
 }

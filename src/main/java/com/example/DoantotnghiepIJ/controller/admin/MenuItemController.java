@@ -74,10 +74,20 @@ public class MenuItemController {
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
     ) {
         return ResponseEntity.ok(
-                menuItemService.search(keyword, isActive, categoryId, page, size)
+                menuItemService.search(
+                        keyword,
+                        isActive,
+                        categoryId,
+                        page,
+                        size,
+                        sortBy,
+                        sortDir
+                )
         );
     }
 

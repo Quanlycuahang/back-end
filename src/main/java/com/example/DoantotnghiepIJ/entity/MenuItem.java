@@ -47,7 +47,8 @@ public class MenuItem {
     private String thumbnail;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    @Column(nullable = false)
+    private Integer quantity = 0;
     //  CATEGORY
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
@@ -63,6 +64,7 @@ public class MenuItem {
         if (isCombo == null) isCombo = false;
         if (isDeleted == null) isDeleted = false;
         if (isActive == null) isActive = true;
+        if (quantity == null) quantity = 0;
     }
 
     @PreUpdate
