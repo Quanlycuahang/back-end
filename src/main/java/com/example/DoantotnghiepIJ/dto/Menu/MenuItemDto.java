@@ -13,4 +13,6 @@ public class MenuItemDto {
     private Double price;
     private Double discountPrice;
     private Long categoryId;
+
+    private Boolean isActive;
 }

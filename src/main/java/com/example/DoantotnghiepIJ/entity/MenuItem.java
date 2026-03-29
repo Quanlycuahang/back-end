@@ -12,7 +12,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "menu_items")
+@Table(
+        name = "menu_items",
+        indexes = {
+                @Index(name = "idx_menu_name", columnList = "name"),
+                @Index(name = "idx_menu_slug", columnList = "slug")
+        }
+)
 public class MenuItem {
 
     @Id
@@ -35,8 +41,9 @@ public class MenuItem {
     private Boolean isAvailable;
 
     private Boolean isCombo;
-
-    private Boolean isDeleted;
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+    private Boolean isDeleted = false;
     private String thumbnail;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -55,6 +62,7 @@ public class MenuItem {
         if (isAvailable == null) isAvailable = true;
         if (isCombo == null) isCombo = false;
         if (isDeleted == null) isDeleted = false;
+        if (isActive == null) isActive = true;
     }
 
     @PreUpdate
