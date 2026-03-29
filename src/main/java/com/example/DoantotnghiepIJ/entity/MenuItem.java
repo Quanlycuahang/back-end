@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -56,7 +57,7 @@ public class MenuItem {
     //  CATEGORY
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
-    @JsonManagedReference
+    @JsonBackReference
     private Category category;
 
     // AUTO
