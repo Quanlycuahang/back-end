@@ -187,4 +187,17 @@ public class MenuItemService {
 
         return finalSlug;
     }
+//    dashboard stats
+    public Map<String, Long> getDashboardStats() {
+
+        long total = menuItemRepository.countByIsDeletedFalse();
+
+        long active = menuItemRepository.countByIsDeletedFalseAndIsActiveTrue();
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("total", total);
+        result.put("active", active);
+
+        return result;
+    }
 }

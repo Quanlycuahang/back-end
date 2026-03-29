@@ -27,4 +27,7 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, UUID> {
     // search + status + category
     Page<MenuItem> findByNameContainingIgnoreCaseAndIsActiveAndCategory_IdAndIsDeletedFalse(
             String name, Boolean isActive, UUID categoryId, Pageable pageable);
+    long countByIsDeletedFalse();
+
+    long countByIsDeletedFalseAndIsActiveTrue();
 }

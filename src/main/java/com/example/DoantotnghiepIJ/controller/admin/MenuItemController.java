@@ -93,4 +93,9 @@ public class MenuItemController {
 
         return ResponseEntity.ok("Upload thành công");
     }
+//    dashboard stats
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getDashboard() {
+        return ResponseEntity.ok(menuItemService.getDashboardStats());
+    }
 }
