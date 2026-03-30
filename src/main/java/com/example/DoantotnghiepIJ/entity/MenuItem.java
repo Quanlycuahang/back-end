@@ -57,7 +57,7 @@ public class MenuItem {
     //  CATEGORY
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
-    @JsonBackReference
+
     private Category category;
 
     // AUTO

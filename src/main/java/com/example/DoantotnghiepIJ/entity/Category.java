@@ -1,6 +1,7 @@
 package com.example.DoantotnghiepIJ.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,9 +37,10 @@ public class Category {
     @Column(nullable = false)
     private Boolean active;
     //  DANH SÁCH MÓN
-    @OneToMany(mappedBy = "category")
-    @JsonManagedReference
+    @JsonIgnore
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<MenuItem> menuItems;
+
     //  CHA
     @ManyToOne
     @JoinColumn(name = "parent_id")
