@@ -20,6 +20,10 @@ public class MenuItemController {
     private final MenuItemService menuItemService;
 
     // ================= CREATE =================
+    @PostMapping("/batch")
+    public List<MenuItemDto> getByIds(@RequestBody List<UUID> ids) {
+        return menuItemService.getByIds(ids);
+    }
     @PostMapping
     public ResponseEntity<?> create(@RequestBody MenuItemDto dto) {
         return ResponseEntity.ok(menuItemService.create(dto));

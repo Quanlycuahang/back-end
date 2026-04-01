@@ -4,9 +4,12 @@ package com.example.DoantotnghiepIJ.dto.Menu;
 
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 public class MenuItemDto {
-
+    private UUID id;
+    private String thumbnail;
     private String name;
     private String slug;
     private String description;

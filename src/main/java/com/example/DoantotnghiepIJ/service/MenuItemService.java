@@ -246,4 +246,37 @@ public class MenuItemService {
 
         return finalSlug;
     }
+
+    public List<MenuItemDto> getByIds(List<UUID> ids) {
+
+        List<MenuItem> items = menuItemRepository.findAllById(ids);
+
+        return items.stream()
+                .map(this::toDto)
+                .toList();
+    }
+    private MenuItemDto toDto(MenuItem item) {
+
+        MenuItemDto dto = new MenuItemDto();
+
+        dto.setId(item.getId());
+        dto.setName(item.getName());
+        dto.setSlug(item.getSlug());
+        dto.setDescription(item.getDescription());
+
+        dto.setPrice(item.getPrice());
+        dto.setDiscountPrice(item.getDiscountPrice());
+
+        dto.setThumbnail(item.getThumbnail());
+
+        dto.setQuantity(item.getQuantity());
+        dto.setIsActive(item.getIsActive());
+
+        // ⚠️ category là object → lấy id
+        if (item.getCategory() != null) {
+            dto.setCategoryId(item.getCategory().getId());
+        }
+
+        return dto;
+    }
 }
