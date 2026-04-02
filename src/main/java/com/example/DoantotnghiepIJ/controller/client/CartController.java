@@ -47,6 +47,7 @@ public class CartController {
     public CartResponse removeItem(@PathVariable UUID productId) {
         return cartService.removeItem(productId);
     }
+
     @DeleteMapping
     public String clearCart() {
         cartService.clearCart();

@@ -40,7 +40,8 @@ public class MenuItem {
     private Double price;
 
     private Double discountPrice;
-
+    @Column(name = "is_featured")
+    private Boolean isFeatured = false;
     private Boolean isAvailable;
 //    @ManyToOne
 //    @JoinColumn(name = "category_id")

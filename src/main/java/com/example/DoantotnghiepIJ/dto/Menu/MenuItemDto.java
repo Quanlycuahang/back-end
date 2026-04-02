@@ -18,4 +18,5 @@ public class MenuItemDto {
     private Long categoryId;
     private Integer quantity;
     private Boolean isActive;
+    private Boolean isFeatured;
 }

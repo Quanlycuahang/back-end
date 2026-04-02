@@ -56,6 +56,7 @@ public class MenuItemController {
     ) {
         return ResponseEntity.ok(menuItemService.update(id, dto));
     }
+    // ================= thêm sản phẩm nổi bật =================
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
@@ -112,4 +113,9 @@ public class MenuItemController {
     public ResponseEntity<?> getDashboard() {
         return ResponseEntity.ok(menuItemService.getDashboardStats());
     }
+//    update featured
+@PutMapping("/{id}/feature")
+public ResponseEntity<MenuItemDto> toggleFeature(@PathVariable UUID id) {
+    return ResponseEntity.ok(menuItemService.toggleFeature(id));
+}
 }

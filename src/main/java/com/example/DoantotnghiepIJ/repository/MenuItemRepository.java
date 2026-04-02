@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, UUID> {
-
+    List<MenuItem> findByIsFeaturedTrue();
     // check slug
     boolean existsBySlug(String slug);
 

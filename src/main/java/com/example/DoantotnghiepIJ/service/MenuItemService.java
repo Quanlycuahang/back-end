@@ -4,6 +4,7 @@ import com.example.DoantotnghiepIJ.dto.Menu.MenuItemDto;
 import com.example.DoantotnghiepIJ.entity.Category;
 import com.example.DoantotnghiepIJ.entity.MenuItem;
 import com.example.DoantotnghiepIJ.entity.MenuItemImage;
+import com.example.DoantotnghiepIJ.mapper.MenuItemMapper;
 import com.example.DoantotnghiepIJ.repository.CategoryRepository;
 import com.example.DoantotnghiepIJ.repository.MenuItemImageRepository;
 import com.example.DoantotnghiepIJ.repository.MenuItemRepository;
@@ -23,6 +24,7 @@ public class MenuItemService {
     private final CategoryRepository categoryRepository;
     private final MenuItemImageRepository menuItemImageRepository;
     private final CloudinaryService cloudinaryService;
+    private final MenuItemMapper menuItemMapper;
 
     // ================== CREATE ==================
     public MenuItem create(MenuItemDto dto) {
@@ -279,4 +281,24 @@ public class MenuItemService {
 
         return dto;
     }
+    public MenuItemDto toggleFeature(UUID id) {
+        MenuItem item = menuItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Menu item not found"));
+
+        item.setIsFeatured(!Boolean.TRUE.equals(item.getIsFeatured()));
+
+        MenuItem saved = menuItemRepository.save(item);
+
+        return menuItemMapper.toResponse(saved);
+    }
+
+    // 🔥 Lấy danh sách nổi bật
+    public List<MenuItemDto> getFeaturedItems() {
+        return menuItemRepository.findByIsFeaturedTrue()
+                .stream()
+                .map(menuItemMapper::toResponse)
+                .toList();
+    }
+
+
 }
