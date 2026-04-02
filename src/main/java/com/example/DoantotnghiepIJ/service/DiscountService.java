@@ -40,20 +40,25 @@ public class DiscountService {
 
         DiscountMapper.update(discount, request);
 
-        // 🔥 FIX status null
+        // 🔥 FIX 1: LẤY TRỰC TIẾP TRẠNG THÁI TỪ FRONTEND TRUYỀN XUỐNG (Quan trọng nhất)
+        if (request.getStatus() != null) {
+            discount.setStatus(request.getStatus());
+        }
+
+        // FIX status null (Trường hợp dữ liệu hỏng)
         if (discount.getStatus() == null) {
             discount.setStatus(true);
         }
 
-        // 🔥 Logic business: auto tắt nếu hết hạn
+        // 🔥 Logic business: auto tắt nếu hết hạn (Backend tự soi vòng lặp thời gian)
         LocalDateTime now = LocalDateTime.now();
-
         if (discount.getEndDate() != null && now.isAfter(discount.getEndDate())) {
             discount.setStatus(false);
         }
 
         return discountRepository.save(discount);
     }
+
     public void delete(Long id) {
         Discount discount = discountRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Discount not found"));
