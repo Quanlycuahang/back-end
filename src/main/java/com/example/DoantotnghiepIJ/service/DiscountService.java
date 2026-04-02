@@ -24,6 +24,13 @@ public class DiscountService {
 
     public Discount create(DiscountRequest request) {
         Discount discount = DiscountMapper.toEntity(request);
+        if (discount.getIsDeleted() == null) {
+            discount.setIsDeleted(false);
+        }
+
+        if (discount.getStatus() == null) {
+            discount.setStatus(true);
+        }
         return discountRepository.save(discount);
     }
 
