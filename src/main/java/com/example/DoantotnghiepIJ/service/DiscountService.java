@@ -7,6 +7,10 @@ import com.example.DoantotnghiepIJ.entity.Discount;
 import com.example.DoantotnghiepIJ.mapper.DiscountMapper;
 import com.example.DoantotnghiepIJ.repository.DiscountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,6 +46,16 @@ public class DiscountService {
     public Discount getByCode(String code) {
         return discountRepository.findByCodeAndIsDeletedFalse(code)
                 .orElseThrow(() -> new RuntimeException("Discount not found"));
+    }
+    public Page<Discount> getAll(int page, int size, String sortBy, String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() :
+                Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return discountRepository.findByIsDeletedFalse(pageable);
     }
 
     // 🔥 APPLY DISCOUNT

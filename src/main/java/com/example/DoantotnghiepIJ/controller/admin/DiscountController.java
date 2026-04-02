@@ -6,6 +6,7 @@ import com.example.DoantotnghiepIJ.dto.Discount.DiscountRequest;
 import com.example.DoantotnghiepIJ.entity.Discount;
 import com.example.DoantotnghiepIJ.service.DiscountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -17,6 +18,15 @@ public class DiscountController {
 
     private final DiscountService discountService;
 
+    @GetMapping
+    public Page<Discount> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        return discountService.getAll(page, size, sortBy, sortDir);
+    }
     @PostMapping
     public Discount create(@RequestBody DiscountRequest request) {
         return discountService.create(request);
