@@ -25,7 +25,7 @@ public class DiscountController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
-        return discountService.getAll(page, size, sortBy, sortDir);
+        return discountService.getAllFull(page, size, sortBy, sortDir);
     }
     @PostMapping
     public Discount create(@RequestBody DiscountRequest request) {

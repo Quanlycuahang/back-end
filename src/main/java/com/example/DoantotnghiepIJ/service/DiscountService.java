@@ -54,7 +54,7 @@ public class DiscountService {
         return discountRepository.findByCodeAndIsDeletedFalse(code)
                 .orElseThrow(() -> new RuntimeException("Discount not found"));
     }
-    public Page<Discount> getAll(int page, int size, String sortBy, String sortDir) {
+    public Page<Discount> getAllFull(int page, int size, String sortBy, String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ?
                 Sort.by(sortBy).descending() :
@@ -62,9 +62,8 @@ public class DiscountService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return discountRepository.findByIsDeletedFalse(pageable);
+        return discountRepository.findAll(pageable); // 🔥 lấy tất cả
     }
-
     // 🔥 APPLY DISCOUNT
     public BigDecimal applyDiscount(String code, BigDecimal orderTotal) {
         Discount discount = getByCode(code);
