@@ -39,9 +39,21 @@ public class DiscountService {
                 .orElseThrow(() -> new RuntimeException("Discount not found"));
 
         DiscountMapper.update(discount, request);
+
+        // 🔥 FIX status null
+        if (discount.getStatus() == null) {
+            discount.setStatus(true);
+        }
+
+        // 🔥 Logic business: auto tắt nếu hết hạn
+        LocalDateTime now = LocalDateTime.now();
+
+        if (discount.getEndDate() != null && now.isAfter(discount.getEndDate())) {
+            discount.setStatus(false);
+        }
+
         return discountRepository.save(discount);
     }
-
     public void delete(Long id) {
         Discount discount = discountRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Discount not found"));
