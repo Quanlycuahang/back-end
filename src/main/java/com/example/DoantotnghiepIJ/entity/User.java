@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.entity;
 
+import com.example.DoantotnghiepIJ.Enum.OtpType;
 import com.example.DoantotnghiepIJ.Enum.UserStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -47,6 +48,11 @@ public class User {
     private Boolean deleted;
 
     private LocalDateTime updatedAt;
+
+    private String otp;
+    private LocalDateTime otpExpiredAt;
+    private LocalDateTime otpSentAt;
+    private OtpType otpType;
 
     // TỰ ĐỘNG KHI INSERT
     @PrePersist
