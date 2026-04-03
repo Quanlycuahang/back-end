@@ -1,6 +1,7 @@
 package com.example.DoantotnghiepIJ.controller.admin;
 
 import com.example.DoantotnghiepIJ.Enum.UserStatus;
+import com.example.DoantotnghiepIJ.dto.UserDto.UpdateUserDto;
 import com.example.DoantotnghiepIJ.dto.UserDto.UserStatisticsDto;
 import com.example.DoantotnghiepIJ.entity.User;
 import com.example.DoantotnghiepIJ.service.MenuItemService;
@@ -68,13 +69,14 @@ public class UserController {
     }
 
 
-    @Operation(summary = "Update Status user")
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
-            @RequestParam UserStatus status
+            @RequestBody UpdateUserDto request
     ) {
-        return ResponseEntity.ok(userService.updateUserStatus(id, status));
+        return ResponseEntity.ok(
+                userService.updateUserStatus(id, request.getStatus())
+        );
     }
 
 //    upload ảnh
@@ -96,22 +98,7 @@ public class UserController {
     public UserStatisticsDto getStatistics() {
         return userService.getUserStatistics();
     }
-//    API nhập kho
-    @PutMapping("/{id}/increase-stock")
-    public ResponseEntity<?> increaseStock(
-            @PathVariable UUID id,
-            @RequestParam int amount
-    ) {
-        menuItemService.increaseStock(id, amount);
-        return ResponseEntity.ok("Nhập kho thành công");
-    }
-//    API xuất kho
-    @PutMapping("/{id}/decrease-stock")
-    public ResponseEntity<?> decreaseStock(
-            @PathVariable UUID id,
-            @RequestParam int amount
-    ) {
-        menuItemService.decreaseStock(id, amount);
-        return ResponseEntity.ok("Xuất kho thành công");
-    }
+
+
+
 }

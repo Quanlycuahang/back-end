@@ -118,4 +118,23 @@ public class MenuItemController {
 public ResponseEntity<MenuItemDto> toggleFeature(@PathVariable UUID id) {
     return ResponseEntity.ok(menuItemService.toggleFeature(id));
 }
+
+    //    API nhập kho
+    @PutMapping("/{id}/increase-stock")
+    public ResponseEntity<?> increaseStock(
+            @PathVariable UUID id,
+            @RequestParam int amount
+    ) {
+        menuItemService.increaseStock(id, amount);
+        return ResponseEntity.ok("Nhập kho thành công");
+    }
+    //    API xuất kho
+    @PutMapping("/{id}/decrease-stock")
+    public ResponseEntity<?> decreaseStock(
+            @PathVariable UUID id,
+            @RequestParam int amount
+    ) {
+        menuItemService.decreaseStock(id, amount);
+        return ResponseEntity.ok("Xuất kho thành công");
+    }
 }
