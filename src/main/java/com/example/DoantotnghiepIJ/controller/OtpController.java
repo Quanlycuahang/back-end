@@ -5,6 +5,7 @@ import com.example.DoantotnghiepIJ.dto.mail.SendOtpRequest;
 import com.example.DoantotnghiepIJ.dto.mail.VerifyOtpRequest;
 import com.example.DoantotnghiepIJ.service.OtpService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,11 +34,17 @@ public class OtpController {
 
         OtpType type = OtpType.valueOf(request.getType());
 
-        otpService.verifyOtp(
+        boolean isValid = otpService.verifyOtp(
                 request.getEmail(),
                 request.getOtp(),
                 type
         );
+
+        if (!isValid) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("OTP không hợp lệ hoặc đã hết hạn");
+        }
 
         return ResponseEntity.ok("Xác thực thành công");
     }

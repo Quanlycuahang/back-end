@@ -19,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OtpService {
 
-    private final UserRepository userRepository;
+    private  final UserRepository userRepository;
     private final OtpVerificationRepository otpRepository;
     private final EmailService emailService;
 
@@ -27,7 +27,9 @@ public class OtpService {
     public void sendOtp(String email, OtpType type) {
 
         UtilsValidate.validateEmail(email);
-
+        if (type == OtpType.REGISTER && userRepository.existsByEmail(email)) {
+            throw new BadRequestException("Email đã tồn tại");
+        }
         Optional<OtpVerification> optionalOtp =
                 otpRepository.findByEmailAndOtpType(email, type);
 
