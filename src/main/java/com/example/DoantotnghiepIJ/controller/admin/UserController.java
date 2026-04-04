@@ -1,6 +1,7 @@
 package com.example.DoantotnghiepIJ.controller.admin;
 
 import com.example.DoantotnghiepIJ.Enum.UserStatus;
+import com.example.DoantotnghiepIJ.dto.UserDto.CreateUserDto;
 import com.example.DoantotnghiepIJ.dto.UserDto.UpdateUserDto;
 import com.example.DoantotnghiepIJ.dto.UserDto.UserStatisticsDto;
 import com.example.DoantotnghiepIJ.entity.User;
@@ -29,10 +30,9 @@ public class UserController {
         this.menuItemService = menuItemService;
     }
 
-    @Operation(summary = "Tạo user")
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
+    public ResponseEntity<User> createUser(@RequestBody CreateUserDto request) {
+        User createdUser = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 

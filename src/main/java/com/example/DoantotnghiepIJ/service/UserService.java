@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.service;
 
+import com.example.DoantotnghiepIJ.dto.UserDto.CreateUserDto;
 import com.example.DoantotnghiepIJ.dto.UserDto.UserStatisticsDto;
 import com.example.DoantotnghiepIJ.entity.User;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
@@ -58,28 +59,38 @@ public class UserService {
     }
 
     // ===================== CREATE =====================
-    public User createUser(User user) {
+    public User createUser(CreateUserDto request) {
 
-        if (user == null) throw new BadRequestException("User is required");
+        if (request == null) {
+            throw new BadRequestException("Request is required");
+        }
 
         // ===== REQUIRED =====
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new BadRequestException("Email is required");
         }
 
-        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new BadRequestException("Password is required");
         }
 
         // ===== TRIM =====
-        String email = user.getEmail().trim().toLowerCase();
-        String phone = user.getPhone() != null ? user.getPhone().trim() : null;
-        String password = user.getPasswordHash().trim();
+        String email = request.getEmail().trim().toLowerCase();
+        String phone = request.getPhone() != null ? request.getPhone().trim() : null;
+        String password = request.getPassword().trim();
+        String fullName = request.getFullName() != null ? request.getFullName().trim() : null;
 
         // ===== VALIDATE =====
         UtilsValidate.validateEmail(email);
-        if (phone != null) UtilsValidate.validatePhone(phone);
         UtilsValidate.validatePassword(password);
+        if (phone != null) {
+            UtilsValidate.validatePhone(phone);
+        }
+
+        if (request.getDateOfBirth() != null &&
+                request.getDateOfBirth().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("Date of birth is invalid");
+        }
 
         // ===== CHECK DUPLICATE =====
         userRepository.findByEmail(email)
@@ -90,17 +101,20 @@ public class UserService {
                     .ifPresent(u -> { throw new BadRequestException("Phone already exists"); });
         }
 
-        // ===== SET DATA =====
+        // ===== MAP DTO → ENTITY =====
+        User user = new User();
         user.setEmail(email);
         user.setPhone(phone);
+        user.setFullName(fullName);
+        user.setDateOfBirth(request.getDateOfBirth());
+
+        // 🔥 QUAN TRỌNG NHẤT
         user.setPasswordHash(passwordEncoder.encode(password));
 
-        if (user.getStatus() == null) {
-            user.setStatus(UserStatus.ACTIVE);
-        }
-
+        user.setStatus(UserStatus.ACTIVE);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+        user.setDeleted(false);
 
         return userRepository.save(user);
     }
