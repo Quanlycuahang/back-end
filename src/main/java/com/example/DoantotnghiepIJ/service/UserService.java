@@ -6,20 +6,16 @@ import com.example.DoantotnghiepIJ.repository.UserRepository;
 import com.example.DoantotnghiepIJ.exception.NotFoundException;
 import com.example.DoantotnghiepIJ.exception.BadRequestException;
 import com.example.DoantotnghiepIJ.Enum.UserStatus;
-
 import com.example.DoantotnghiepIJ.validate.UtilsValidate;
+
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.ValidationUtils;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
@@ -28,119 +24,136 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder, CloudinaryService cloudinaryService) {
+                       PasswordEncoder passwordEncoder,
+                       CloudinaryService cloudinaryService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.cloudinaryService = cloudinaryService;
     }
 
-    //  GET ALL
-    public Page<User> getUsers(
-            String keyword,
-            UserStatus status,
-            int page,
-            int size
-    ) {
-        System.out.println("Keyword: " + keyword);
-        System.out.println("Status: " + status);
-        System.out.println("Total users: " + userRepository.count());
-        System.out.println("Page: " + page);
-        System.out.println("Size: " + size);
+    // ===================== GET ALL =====================
+    public Page<User> getUsers(String keyword, UserStatus status, int page, int size) {
+
+        if (page < 0) throw new BadRequestException("Page must >= 0");
+        if (size <= 0 || size > 100) throw new BadRequestException("Size must be 1-100");
+
         if (keyword != null) {
-            keyword = keyword.toLowerCase();
+            keyword = keyword.trim().toLowerCase();
+            if (keyword.isEmpty()) keyword = null;
         }
 
-        if (keyword != null && keyword.trim().isEmpty()) {
-            keyword = null;
-        }
-        Pageable pageable = PageRequest.of(page, size); // ❌ không sort
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         return userRepository.searchUsers(keyword, status, pageable);
     }
 
-    //  GET BY ID
+    // ===================== GET BY ID =====================
     public User getUserById(Long id) {
+        if (id == null) throw new BadRequestException("Id is required");
+
         return userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
     }
 
-    //  CREATE
+    // ===================== CREATE =====================
     public User createUser(User user) {
 
-        // validate trước
-        UtilsValidate.validateEmail(user.getEmail());
-        UtilsValidate.validatePhone(user.getPhone());
+        if (user == null) throw new BadRequestException("User is required");
 
-        // check trùng
-        userRepository.findByEmail(user.getEmail())
-                .ifPresent(u -> {
-                    throw new BadRequestException("Email already exists");
-                });
+        // ===== REQUIRED =====
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new BadRequestException("Email is required");
+        }
 
-        userRepository.findByPhone(user.getPhone())
-                .ifPresent(u -> {
-                    throw new BadRequestException("Phone already exists");
-                });
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new BadRequestException("Password is required");
+        }
 
-        // hash password
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        // ===== TRIM =====
+        String email = user.getEmail().trim().toLowerCase();
+        String phone = user.getPhone() != null ? user.getPhone().trim() : null;
+        String password = user.getPasswordHash().trim();
 
-        // default status
+        // ===== VALIDATE =====
+        UtilsValidate.validateEmail(email);
+        if (phone != null) UtilsValidate.validatePhone(phone);
+        UtilsValidate.validatePassword(password);
+
+        // ===== CHECK DUPLICATE =====
+        userRepository.findByEmail(email)
+                .ifPresent(u -> { throw new BadRequestException("Email already exists"); });
+
+        if (phone != null) {
+            userRepository.findByPhone(phone)
+                    .ifPresent(u -> { throw new BadRequestException("Phone already exists"); });
+        }
+
+        // ===== SET DATA =====
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(passwordEncoder.encode(password));
+
         if (user.getStatus() == null) {
             user.setStatus(UserStatus.ACTIVE);
         }
 
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+
         return userRepository.save(user);
     }
 
-    //  UPDATE
+    // ===================== UPDATE =====================
     public User updateUser(Long id, User request) {
 
-        User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+        if (id == null) throw new BadRequestException("Id is required");
 
-        // check delete
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         if (Boolean.TRUE.equals(existingUser.getDeleted())) {
             throw new BadRequestException("User has been deleted");
         }
 
-        // check status
         if (existingUser.getStatus() == UserStatus.INACTIVE) {
             throw new BadRequestException("User is disabled");
         }
 
-        // EMAIL
-        if (request.getEmail() != null &&
-                !request.getEmail().equals(existingUser.getEmail())) {
+        // ===== EMAIL =====
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim().toLowerCase();
 
-            UtilsValidate.validateEmail(request.getEmail());
+            if (!email.equals(existingUser.getEmail())) {
 
-            userRepository.findByEmail(request.getEmail())
-                    .ifPresent(u -> {
-                        throw new BadRequestException("Email already exists");
-                    });
+                UtilsValidate.validateEmail(email);
 
-            existingUser.setEmail(request.getEmail());
+                userRepository.findByEmail(email)
+                        .ifPresent(u -> { throw new BadRequestException("Email already exists"); });
+
+                existingUser.setEmail(email);
+            }
         }
 
-        // PHONE
-        if (request.getPhone() != null &&
-                !request.getPhone().equals(existingUser.getPhone())) {
+        // ===== PHONE =====
+        if (request.getPhone() != null) {
+            String phone = request.getPhone().trim();
 
-            UtilsValidate.validatePhone(request.getPhone());
+            if (!phone.equals(existingUser.getPhone())) {
 
-            userRepository.findByPhone(request.getPhone())
-                    .ifPresent(u -> {
-                        throw new BadRequestException("Phone already exists");
-                    });
+                UtilsValidate.validatePhone(phone);
 
-            existingUser.setPhone(request.getPhone());
+                userRepository.findByPhone(phone)
+                        .ifPresent(u -> { throw new BadRequestException("Phone already exists"); });
+
+                existingUser.setPhone(phone);
+            }
         }
 
-        // update field
+        // ===== OTHER FIELDS =====
         if (request.getFullName() != null) {
-            existingUser.setFullName(request.getFullName());
+            existingUser.setFullName(request.getFullName().trim());
         }
 
         if (request.getGender() != null) {
@@ -148,6 +161,9 @@ public class UserService {
         }
 
         if (request.getDateOfBirth() != null) {
+            if (request.getDateOfBirth().isAfter(LocalDateTime.now())) {
+                throw new BadRequestException("Date of birth is invalid");
+            }
             existingUser.setDateOfBirth(request.getDateOfBirth());
         }
 
@@ -159,87 +175,101 @@ public class UserService {
             existingUser.setStatus(request.getStatus());
         }
 
+        // ===== PASSWORD =====
         if (request.getPasswordHash() != null) {
-            existingUser.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+
+            String password = request.getPasswordHash().trim();
+
+            UtilsValidate.validatePassword(password);
+
+            existingUser.setPasswordHash(passwordEncoder.encode(password));
         }
 
-        existingUser.setUpdatedAt(java.time.LocalDateTime.now());
+        existingUser.setUpdatedAt(LocalDateTime.now());
 
         return userRepository.save(existingUser);
     }
 
-    //  DELETE (soft delete)
+    // ===================== DELETE =====================
     public void deleteUser(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (Boolean.TRUE.equals(user.getDeleted())) {
             throw new BadRequestException("User already deleted");
         }
 
         user.setDeleted(true);
-        user.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
     }
 
-    //  UPDATE STATUS (lock/unlock)
+    // ===================== STATUS =====================
     public User updateUserStatus(Long id, UserStatus status) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (Boolean.TRUE.equals(user.getDeleted())) {
             throw new BadRequestException("User has been deleted");
         }
+
         user.setStatus(status);
-        user.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
         return userRepository.save(user);
     }
 
-
+    // ===================== LOGIN =====================
     public User login(String email, String password) {
+
+        if (email == null || password == null) {
+            throw new BadRequestException("Email and password are required");
+        }
+
+        email = email.trim().toLowerCase();
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        //  Nếu bị khóa
+
         if (user.getStatus() == UserStatus.INACTIVE) {
             throw new BadRequestException("User is disabled");
         }
-        // check password
+
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BadRequestException("Invalid password");
         }
 
         return user;
     }
-//    UPLOAD ẢNH
+
+    // ===================== UPLOAD AVATAR =====================
     @Transactional
     public String uploadAvatar(Long userId, MultipartFile file) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        // validate
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("File is empty");
+            throw new BadRequestException("File is empty");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new BadRequestException("File too large (max 5MB)");
         }
 
         if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            throw new RuntimeException("File must be image");
+            throw new BadRequestException("File must be image");
         }
 
-        // delete ảnh cũ (an toàn)
         if (user.getPublicId() != null && !user.getPublicId().isBlank()) {
             try {
                 cloudinaryService.delete(user.getPublicId());
-            } catch (Exception e) {
-                System.out.println("Skip delete old image");
-            }
+            } catch (Exception ignored) {}
         }
 
-        // upload ảnh mới
         Map result = cloudinaryService.upload(file);
 
         String url = result.get("secure_url").toString();
@@ -252,13 +282,12 @@ public class UserService {
 
         return url;
     }
-//    dashboard thống kê user
+
+    // ===================== STATISTICS =====================
     public UserStatisticsDto getUserStatistics() {
 
         long totalUsers = userRepository.count();
-
         long activeUsers = userRepository.countByStatus(UserStatus.ACTIVE);
-
         long newUsersToday = userRepository.countUsersCreatedToday(LocalDate.now());
 
         return UserStatisticsDto.builder()
@@ -267,5 +296,4 @@ public class UserService {
                 .newUsersToday(newUsersToday)
                 .build();
     }
-
 }
