@@ -16,7 +16,12 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
         message.setSubject("Mã xác nhận");
-        message.setText("OTP của bạn là: " + otp + "\nHết hạn sau 5 phút");
+        message.setText(
+                "Xin chào,\n\n" +
+                        "Mã OTP của bạn là: " + otp + "\n" +
+                        "Mã này có hiệu lực trong 5 phút.\n\n" +
+                        "Không chia sẻ mã này cho bất kỳ ai."
+        );
 
         mailSender.send(message);
     }

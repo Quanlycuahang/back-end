@@ -49,10 +49,6 @@ public class User {
 
     private LocalDateTime updatedAt;
 
-    private String otp;
-    private LocalDateTime otpExpiredAt;
-    private LocalDateTime otpSentAt;
-    private OtpType otpType;
 
     // TỰ ĐỘNG KHI INSERT
     @PrePersist

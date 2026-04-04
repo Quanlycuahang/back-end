@@ -1,8 +1,10 @@
 package com.example.DoantotnghiepIJ.service;
 
 import com.example.DoantotnghiepIJ.Enum.OtpType;
+import com.example.DoantotnghiepIJ.entity.OtpVerification;
 import com.example.DoantotnghiepIJ.entity.User;
 import com.example.DoantotnghiepIJ.exception.BadRequestException;
+import com.example.DoantotnghiepIJ.repository.OtpVerificationRepository;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
 import com.example.DoantotnghiepIJ.validate.UtilsValidate;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class OtpService {
 
     private final UserRepository userRepository;
+    private final OtpVerificationRepository otpRepository;
     private final EmailService emailService;
 
     // 🔥 SEND OTP
@@ -24,57 +28,48 @@ public class OtpService {
 
         UtilsValidate.validateEmail(email);
 
-        User user = userRepository.findByEmail(email)
-                .orElse(new User());
+        Optional<OtpVerification> optionalOtp =
+                otpRepository.findByEmailAndOtpType(email, type);
 
-        // 🔥 chống spam 30s
-        if (user.getOtpSentAt() != null &&
-                user.getOtpSentAt().isAfter(LocalDateTime.now().minusSeconds(30))) {
+        OtpVerification otpEntity = optionalOtp.orElse(new OtpVerification());
+
+        // chống spam 30s
+        if (otpEntity.getSentAt() != null &&
+                otpEntity.getSentAt().isAfter(LocalDateTime.now().minusSeconds(30))) {
 
             throw new BadRequestException("Vui lòng đợi 30 giây để gửi lại OTP");
         }
 
-        // tạo OTP
         String otp = String.valueOf((int)(Math.random() * 900000) + 100000);
 
-        user.setEmail(email);
-        user.setOtp(otp);
-        user.setOtpType(type);
-        user.setOtpSentAt(LocalDateTime.now());
-        user.setOtpExpiredAt(LocalDateTime.now().plusMinutes(5));
+        otpEntity.setEmail(email);
+        otpEntity.setOtp(otp);
+        otpEntity.setOtpType(type);
+        otpEntity.setSentAt(LocalDateTime.now());
+        otpEntity.setExpiredAt(LocalDateTime.now().plusMinutes(5));
 
-        userRepository.save(user);
+        otpRepository.save(otpEntity);
 
         emailService.sendOtpEmail(email, otp);
     }
 
     // 🔥 VERIFY OTP
-    public void verifyOtp(String email, String otp, OtpType type) {
+    public boolean verifyOtp(String email, String otp, OtpType type) {
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("Email không tồn tại"));
+        Optional<OtpVerification> optionalOtp =
+                otpRepository.findByEmailAndOtpType(email, type);
 
-        if (user.getOtp() == null) {
-            throw new BadRequestException("Chưa gửi OTP");
-        }
+        if (optionalOtp.isEmpty()) return false;
 
-        if (!user.getOtp().equals(otp)) {
-            throw new BadRequestException("OTP không đúng");
-        }
+        OtpVerification otpEntity = optionalOtp.get();
 
-        if (user.getOtpExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("OTP đã hết hạn");
-        }
+        if (otpEntity.getExpiredAt().isBefore(LocalDateTime.now())) return false;
 
-        if (user.getOtpType() != type) {
-            throw new BadRequestException("OTP không hợp lệ");
-        }
+        if (!otpEntity.getOtp().equals(otp.trim())) return false;
 
-        // clear OTP sau khi dùng
-        user.setOtp(null);
-        user.setOtpExpiredAt(null);
-        user.setOtpType(null);
+        // ✅ xóa OTP sau khi verify
+        otpRepository.delete(otpEntity);
 
-        userRepository.save(user);
+        return true;
     }
 }
