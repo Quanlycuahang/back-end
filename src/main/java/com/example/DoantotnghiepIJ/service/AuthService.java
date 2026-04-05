@@ -124,4 +124,18 @@ public class AuthService {
 
         throw new ApiException(ErrorCode.INVALID_TOKEN);
     }
+
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+
+        String refreshToken = extractRefreshTokenFromCookie(request);
+
+        refreshTokenRepository.findByToken(refreshToken).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
+
+        // ❌ Xóa cookie
+        response.addHeader("Set-Cookie",
+                "refreshToken=; HttpOnly; Path=/auth; Max-Age=0; SameSite=Strict");
+    }
 }

@@ -15,6 +15,14 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request,
+                                    HttpServletResponse response) {
+
+        authService.logout(request, response);
+
+        return ResponseEntity.ok("Logout successful");
+    }
 
     // 🔐 LOGIN
     @PostMapping("/login")
