@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.controller.client;
 
+import com.example.DoantotnghiepIJ.dto.login.ForgotPasswordRequest;
 import com.example.DoantotnghiepIJ.dto.login.LoginRequest;
 import com.example.DoantotnghiepIJ.dto.login.LoginResponse;
 import com.example.DoantotnghiepIJ.service.AuthService;
@@ -55,5 +56,13 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+
+        authService.forgotPassword(request);
+
+        return ResponseEntity.ok("Password reset successful");
     }
 }

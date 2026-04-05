@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.service;
 
+import com.example.DoantotnghiepIJ.dto.login.ForgotPasswordRequest;
 import com.example.DoantotnghiepIJ.entity.RefreshToken;
 import com.example.DoantotnghiepIJ.exception.ApiException;
 import com.example.DoantotnghiepIJ.Enum.ErrorCode;
@@ -7,8 +8,10 @@ import com.example.DoantotnghiepIJ.Enum.UserStatus;
 import com.example.DoantotnghiepIJ.dto.login.LoginRequest;
 import com.example.DoantotnghiepIJ.dto.login.LoginResponse;
 import com.example.DoantotnghiepIJ.entity.User;
+import com.example.DoantotnghiepIJ.exception.BadRequestException;
 import com.example.DoantotnghiepIJ.repository.RefreshTokenRepository;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
+import com.example.DoantotnghiepIJ.validate.UtilsValidate;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -137,5 +140,52 @@ public class AuthService {
         // ❌ Xóa cookie
         response.addHeader("Set-Cookie",
                 "refreshToken=; HttpOnly; Path=/auth; Max-Age=0; SameSite=Strict");
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        // 1. validate input
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new BadRequestException("Email is required");
+        }
+
+        if (request.getNewPassword() == null || request.getConfirmPassword() == null) {
+            throw new BadRequestException("Password is required");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Password confirmation does not match");
+        }
+
+        String email = request.getEmail().trim().toLowerCase();
+        String newPassword = request.getNewPassword().trim();
+
+        // validate format
+        UtilsValidate.validateEmail(email);
+        UtilsValidate.validatePassword(newPassword);
+
+        // 2. tìm user
+        User user = userRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new ApiException(ErrorCode.ACCOUNT_LOCKED);
+        }
+
+        // 3. encode password mới
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+
+        user.setUpdatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
+
+        // 🔥 4. revoke toàn bộ refresh token (logout tất cả device)
+        var tokens = refreshTokenRepository.findByUser(user);
+
+        for (RefreshToken token : tokens) {
+            token.setRevoked(true);
+        }
+
+        refreshTokenRepository.saveAll(tokens);
     }
 }
