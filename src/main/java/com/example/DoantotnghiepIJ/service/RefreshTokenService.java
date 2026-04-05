@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -15,14 +16,30 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public String createRefreshToken(User user) {
+    private static final int MAX_SESSIONS = 5;
 
-        String token = UUID.randomUUID().toString();
+    public String createRefreshToken(User user, String userAgent, String ipAddress) {
 
+        // 1. Giới hạn session
+        List<RefreshToken> tokens = refreshTokenRepository
+                .findByUserAndRevokedFalseOrderByCreatedAtAsc(user);
+
+        if (tokens.size() >= MAX_SESSIONS) {
+            RefreshToken oldest = tokens.get(0);
+            oldest.setRevoked(true);
+            refreshTokenRepository.save(oldest);
+        }
+
+        // 2. Tạo token mạnh hơn
+        String token = UUID.randomUUID().toString() + UUID.randomUUID();
+
+        // 3. Tạo entity
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusDays(7))
+                .userAgent(userAgent)
+                .ipAddress(ipAddress)
+                .expiredAt(LocalDateTime.now().plusDays(7))
                 .revoked(false)
                 .build();
 

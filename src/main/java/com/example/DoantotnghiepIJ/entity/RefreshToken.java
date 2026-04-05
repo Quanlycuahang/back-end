@@ -1,9 +1,6 @@
 package com.example.DoantotnghiepIJ.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,15 +14,26 @@ import java.time.LocalDateTime;
 public class RefreshToken {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String token;
 
-    private LocalDateTime expiryDate;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(length = 500)
+    private String userAgent;   // ✅ device
+
+    private String ipAddress;   // ✅ IP
+
+    private LocalDateTime expiredAt; // ✅ đổi tên cho thống nhất
 
     private boolean revoked;
-
-    @ManyToOne
-    private User user;
+    private LocalDateTime createdAt;
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+    }
 }
