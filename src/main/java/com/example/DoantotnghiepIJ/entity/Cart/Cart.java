@@ -1,5 +1,6 @@
 package com.example.DoantotnghiepIJ.entity.Cart;
 
+import com.example.DoantotnghiepIJ.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,8 +22,9 @@ public class Cart {
     private Long id;
 
     // Nếu bạn có User entity thì map ManyToOne
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @OneToMany(
             mappedBy = "cart",

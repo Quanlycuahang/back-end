@@ -5,9 +5,11 @@ import com.example.DoantotnghiepIJ.dto.cart.CartResponse;
 import com.example.DoantotnghiepIJ.dto.cart.CartItemResponse;
 import com.example.DoantotnghiepIJ.entity.Cart.Cart;
 import com.example.DoantotnghiepIJ.entity.Cart.CartItem;
+import com.example.DoantotnghiepIJ.entity.User;
 import com.example.DoantotnghiepIJ.mapper.CartMapper;
 import com.example.DoantotnghiepIJ.repository.CartItemRepository;
 import com.example.DoantotnghiepIJ.repository.CartRepository;
+import com.example.DoantotnghiepIJ.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,20 +28,27 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final CartMapper cartMapper;
     private final ProductClient productClient;
+    private final UserRepository UserRepository;
 
     private final Long userId = 1L; // tạm hardcode
     private Cart getOrCreateCart() {
+        User user = UserRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         return cartRepository.findByUserId(userId)
                 .orElseGet(() -> cartRepository.save(
-                        Cart.builder().userId(userId).build()
+                        Cart.builder()
+                                .user(user)
+                                .build()
                 ));
     }
     // ===== GET CART =====
     public CartResponse getCart() {
-
+        User user = UserRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> cartRepository.save(
-                        Cart.builder().userId(userId).build()
+                        Cart.builder().user(user).build()
                 ));
 
         if (cart.getItems().isEmpty()) {
