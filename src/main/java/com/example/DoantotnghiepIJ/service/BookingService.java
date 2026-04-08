@@ -7,6 +7,7 @@ import com.example.DoantotnghiepIJ.dto.Booking.BookingResponse;
 import com.example.DoantotnghiepIJ.entity.Booking;
 import com.example.DoantotnghiepIJ.Enum.BookingStatus;
 import com.example.DoantotnghiepIJ.repository.BookingRepository;
+import com.example.DoantotnghiepIJ.validate.UtilsValidate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class BookingService {
 
     // 🟢 Create booking
     public BookingResponse create(BookingRequest request) {
+        UtilsValidate.validatePhone(request.getPhone());
         Booking booking = Booking.builder()
                 .customerName(request.getName())
                 .phone(request.getPhone())
