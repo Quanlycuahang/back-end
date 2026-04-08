@@ -20,7 +20,7 @@ public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private String sessionId;
     // Nếu bạn có User entity thì map ManyToOne
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
