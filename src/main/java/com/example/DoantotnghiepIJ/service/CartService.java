@@ -1,8 +1,8 @@
 package com.example.DoantotnghiepIJ.service;
 
 import com.example.DoantotnghiepIJ.dto.Menu.ProductResponse;
-import com.example.DoantotnghiepIJ.dto.cart.CartResponse;
 import com.example.DoantotnghiepIJ.dto.cart.CartItemResponse;
+import com.example.DoantotnghiepIJ.dto.cart.CartResponse;
 import com.example.DoantotnghiepIJ.entity.Cart.Cart;
 import com.example.DoantotnghiepIJ.entity.Cart.CartItem;
 import com.example.DoantotnghiepIJ.entity.User;
@@ -10,10 +10,12 @@ import com.example.DoantotnghiepIJ.repository.CartItemRepository;
 import com.example.DoantotnghiepIJ.repository.CartRepository;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,16 +29,17 @@ public class CartService {
     private final ProductClient productClient;
 
     // =========================
-    // 🔥 CORE: lấy cart theo login hoặc guest
+    // 🔥 CORE: lấy cart (user / guest)
     // =========================
     private Cart getCurrentCart(String sessionId) {
 
+
         var auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // 👉 CASE 1: đã login
+        // 👉 CASE 1: USER (đã login)
         if (auth != null
                 && auth.isAuthenticated()
-                && !"anonymousUser".equals(auth.getName())) {
+                && !(auth instanceof AnonymousAuthenticationToken)) {
 
             String email = auth.getName();
 
@@ -51,18 +54,20 @@ public class CartService {
                     ));
         }
 
-        // 👉 CASE 2: guest
-        if (sessionId == null || sessionId.isBlank()) {
-            throw new RuntimeException("SessionId is required for guest");
+
+            // 👉 CASE 2: GUEST (FIX CHUẨN)
+            final String finalSessionId = (sessionId == null || sessionId.isBlank())
+                    ? UUID.randomUUID().toString()
+                    : sessionId;
+
+            return cartRepository.findBySessionId(finalSessionId)
+                    .orElseGet(() -> cartRepository.save(
+                            Cart.builder()
+                                    .sessionId(finalSessionId)
+                                    .build()
+                    ));
         }
 
-        return cartRepository.findBySessionId(sessionId)
-                .orElseGet(() -> cartRepository.save(
-                        Cart.builder()
-                                .sessionId(sessionId)
-                                .build()
-                ));
-    }
 
     // =========================
     // 🛒 GET CART
@@ -71,7 +76,7 @@ public class CartService {
 
         Cart cart = getCurrentCart(sessionId);
 
-        if (cart.getItems().isEmpty()) {
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
             return CartResponse.builder()
                     .items(List.of())
                     .subtotal(BigDecimal.ZERO)
@@ -92,9 +97,8 @@ public class CartService {
                 .map(item -> {
                     ProductResponse p = productMap.get(item.getProductId());
 
-                    if (p == null) {
-                        throw new RuntimeException("Product not found");
-                    }
+                    // 👉 tránh crash nếu product service lỗi
+                    if (p == null) return null;
 
                     return CartItemResponse.builder()
                             .productId(item.getProductId())
@@ -105,6 +109,7 @@ public class CartService {
                             .total(item.getTotal())
                             .build();
                 })
+                .filter(Objects::nonNull)
                 .toList();
 
         BigDecimal subtotal = items.stream()
@@ -141,6 +146,9 @@ public class CartService {
                 ? product.getDiscountPrice()
                 : product.getPrice();
 
+        BigDecimal price = BigDecimal.valueOf(finalPrice)
+                .setScale(2, RoundingMode.HALF_UP);
+
         CartItem item = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
                 .orElse(null);
@@ -151,7 +159,7 @@ public class CartService {
             item = CartItem.builder()
                     .productId(productId)
                     .quantity(quantity)
-                    .price(BigDecimal.valueOf(finalPrice))
+                    .price(price)
                     .build();
 
             cart.addItem(item);
