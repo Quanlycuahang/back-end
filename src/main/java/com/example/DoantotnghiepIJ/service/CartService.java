@@ -33,7 +33,6 @@ public class CartService {
     // =========================
     private Cart getCurrentCart(String sessionId) {
 
-
         var auth = SecurityContextHolder.getContext().getAuthentication();
 
         // 👉 CASE 1: USER (đã login)
@@ -54,20 +53,18 @@ public class CartService {
                     ));
         }
 
-
-            // 👉 CASE 2: GUEST (FIX CHUẨN)
-            final String finalSessionId = (sessionId == null || sessionId.isBlank())
-                    ? UUID.randomUUID().toString()
-                    : sessionId;
-
-            return cartRepository.findBySessionId(finalSessionId)
-                    .orElseGet(() -> cartRepository.save(
-                            Cart.builder()
-                                    .sessionId(finalSessionId)
-                                    .build()
-                    ));
+        // 👉 CASE 2: GUEST (BẮT BUỘC phải có sessionId)
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new RuntimeException("SessionId is required");
         }
 
+        return cartRepository.findBySessionId(sessionId)
+                .orElseGet(() -> cartRepository.save(
+                        Cart.builder()
+                                .sessionId(sessionId)
+                                .build()
+                ));
+    }
 
     // =========================
     // 🛒 GET CART
@@ -97,7 +94,6 @@ public class CartService {
                 .map(item -> {
                     ProductResponse p = productMap.get(item.getProductId());
 
-                    // 👉 tránh crash nếu product service lỗi
                     if (p == null) return null;
 
                     return CartItemResponse.builder()
@@ -162,11 +158,13 @@ public class CartService {
                     .price(price)
                     .build();
 
-            cart.addItem(item);
+            cart.addItem(item); // 🔥 cascade sẽ tự save
         }
 
         cartRepository.save(cart);
-        return getCart(sessionId);
+
+        // 🔥 QUAN TRỌNG: dùng đúng sessionId của cart
+        return getCart(cart.getSessionId());
     }
 
     // =========================
@@ -191,7 +189,7 @@ public class CartService {
         }
 
         cartRepository.save(cart);
-        return getCart(sessionId);
+        return getCart(cart.getSessionId());
     }
 
     // =========================
@@ -208,7 +206,7 @@ public class CartService {
         cart.removeItem(item);
         cartRepository.save(cart);
 
-        return getCart(sessionId);
+        return getCart(cart.getSessionId());
     }
 
     // =========================
