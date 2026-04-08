@@ -31,6 +31,7 @@ public class Cart {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @Builder.Default
     private List<CartItem> items = new ArrayList<>();
 
     @Column(name = "created_at")
@@ -41,6 +42,9 @@ public class Cart {
 
     // ===== Helper methods (rất nên có) =====
     public void addItem(CartItem item) {
+        if (items == null) {
+            items = new ArrayList<>();
+        }
         items.add(item);
         item.setCart(this);
     }
