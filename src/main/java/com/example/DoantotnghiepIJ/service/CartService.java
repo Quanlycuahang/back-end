@@ -9,10 +9,12 @@ import com.example.DoantotnghiepIJ.entity.User;
 import com.example.DoantotnghiepIJ.repository.CartItemRepository;
 import com.example.DoantotnghiepIJ.repository.CartRepository;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CartService {
 
     private final CartRepository cartRepository;
