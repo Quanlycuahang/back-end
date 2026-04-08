@@ -73,8 +73,8 @@ public class BookingService {
         Booking booking = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Invalid state");
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new RuntimeException("Already cancelled");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
