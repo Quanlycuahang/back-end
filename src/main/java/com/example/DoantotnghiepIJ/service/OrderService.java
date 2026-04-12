@@ -16,25 +16,52 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    // Lấy chi tiết
+    // =========================
+    // LẤY CHI TIẾT
+    // =========================
     public Order getOrderById(String id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
-    // Tạo đơn (bạn đã có logic trước đó)
+    // =========================
+    // TẠO ĐƠN HÀNG
+    // =========================
     public Order createOrder(Order order) {
+
+        // ❗ userId phải được set từ Controller
+        if (order.getUserId() == null) {
+            throw new RuntimeException("userId is required");
+        }
+
+        order.setStatus(OrderStatus.PENDING);
+        order.setPaymentStatus(PaymentStatus.UNPAID);
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
+
+        // Gán quan hệ Order - OrderItem
+        order.getItems().forEach(item -> item.setOrder(order));
+
         return orderRepository.save(order);
     }
 
-    // Lấy danh sách
+    // =========================
+    // LẤY DANH SÁCH TẤT CẢ ĐƠN
+    // =========================
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    // Cập nhật thông tin đơn
+    // =========================
+    // LẤY ĐƠN THEO USER
+    // =========================
+    public List<Order> getOrdersByUser(String userId) {
+        return orderRepository.findByUserId(userId);
+    }
+
+    // =========================
+    // CẬP NHẬT ĐƠN
+    // =========================
     public Order updateOrder(String id, Order newOrder) {
         Order order = getOrderById(id);
 
@@ -47,7 +74,9 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    // Cập nhật trạng thái đơn
+    // =========================
+    // CẬP NHẬT TRẠNG THÁI
+    // =========================
     public Order updateStatus(String id, OrderStatus status) {
         Order order = getOrderById(id);
         order.setStatus(status);
@@ -55,7 +84,9 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    // Cập nhật thanh toán
+    // =========================
+    // CẬP NHẬT THANH TOÁN
+    // =========================
     public Order updatePaymentStatus(String id, PaymentStatus paymentStatus) {
         Order order = getOrderById(id);
         order.setPaymentStatus(paymentStatus);
@@ -63,7 +94,9 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    // Xóa mềm
+    // =========================
+    // XÓA MỀM
+    // =========================
     public void deleteOrder(String id) {
         Order order = getOrderById(id);
         order.setDeleted(true);

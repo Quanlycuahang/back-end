@@ -25,7 +25,7 @@ public class Order {
     private String receiverPhone;
     private String receiverEmail;
     private String shippingAddress;
-
+    private String userId;
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal discountAmount;

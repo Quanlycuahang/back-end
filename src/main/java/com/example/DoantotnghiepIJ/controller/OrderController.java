@@ -16,45 +16,73 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    // Tạo đơn
+    // =========================
+    // TẠO ĐƠN
+    // =========================
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
+
+        // ❗ check userId
+        if (order.getUserId() == null || order.getUserId().isEmpty()) {
+            throw new RuntimeException("userId is required");
+        }
+
         return orderService.createOrder(order);
     }
 
-    // Xem danh sách
+    // =========================
+    // XEM DANH SÁCH
+    // =========================
     @GetMapping
     public List<Order> getAll() {
         return orderService.getAllOrders();
     }
 
-    // Xem chi tiết
+    // =========================
+    // XEM CHI TIẾT
+    // =========================
     @GetMapping("/{id}")
     public Order getDetail(@PathVariable String id) {
         return orderService.getOrderById(id);
     }
 
-    // Cập nhật đơn (địa chỉ, ghi chú, ...)
+    // =========================
+    // 🔥 LẤY ĐƠN THEO USER
+    // =========================
+    @GetMapping("/user/{userId}")
+    public List<Order> getOrdersByUser(@PathVariable String userId) {
+        return orderService.getOrdersByUser(userId);
+    }
+
+    // =========================
+    // CẬP NHẬT ĐƠN
+    // =========================
     @PutMapping("/{id}")
     public Order updateOrder(@PathVariable String id, @RequestBody Order order) {
         return orderService.updateOrder(id, order);
     }
 
-    // Cập nhật trạng thái đơn
+    // =========================
+    // CẬP NHẬT TRẠNG THÁI
+    // =========================
     @PatchMapping("/{id}/status")
     public Order updateStatus(@PathVariable String id,
                               @RequestParam OrderStatus status) {
         return orderService.updateStatus(id, status);
     }
 
-    // Cập nhật trạng thái thanh toán
+    // =========================
+    // CẬP NHẬT THANH TOÁN
+    // =========================
     @PatchMapping("/{id}/payment")
     public Order updatePayment(@PathVariable String id,
                                @RequestParam PaymentStatus paymentStatus) {
         return orderService.updatePaymentStatus(id, paymentStatus);
     }
 
-    // Xóa đơn (soft delete)
+    // =========================
+    // XÓA MỀM
+    // =========================
     @DeleteMapping("/{id}")
     public void deleteOrder(@PathVariable String id) {
         orderService.deleteOrder(id);
