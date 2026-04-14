@@ -2,7 +2,9 @@ package com.example.DoantotnghiepIJ.service;
 
 import com.example.DoantotnghiepIJ.dto.UserDto.CreateUserDto;
 import com.example.DoantotnghiepIJ.dto.UserDto.UserStatisticsDto;
+import com.example.DoantotnghiepIJ.entity.Role;
 import com.example.DoantotnghiepIJ.entity.User;
+import com.example.DoantotnghiepIJ.repository.RoleRepository;
 import com.example.DoantotnghiepIJ.repository.UserRepository;
 import com.example.DoantotnghiepIJ.exception.NotFoundException;
 import com.example.DoantotnghiepIJ.exception.BadRequestException;
@@ -17,7 +19,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -25,14 +30,27 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
-
+    private final RoleRepository roleRepository;
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       CloudinaryService cloudinaryService) {
+                       CloudinaryService cloudinaryService, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.cloudinaryService = cloudinaryService;
+        this.roleRepository = roleRepository;
     }
+
+    public void assignRoles(Long userId, List<UUID> roleIds) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Role> roles = roleRepository.findAllById(roleIds);
+
+        user.setRoles(new HashSet<>(roles));
+        userRepository.save(user);
+    }
+
 
     // ===================== GET ALL =====================
     public Page<User> getUsers(String keyword, UserStatus status, int page, int size) {
@@ -310,4 +328,6 @@ public class UserService {
                 .newUsersToday(newUsersToday)
                 .build();
     }
+
+
 }

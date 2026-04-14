@@ -100,5 +100,11 @@ public class UserController {
     }
 
 
-
+    @PostMapping("/{userId}/roles")
+    public void assignRoles(
+            @PathVariable Long userId,
+            @RequestBody List<UUID> roleIds
+    ) {
+        userService.assignRoles(userId, roleIds);
+    }
 }
