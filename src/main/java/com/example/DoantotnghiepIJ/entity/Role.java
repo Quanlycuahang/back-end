@@ -25,7 +25,7 @@ public class Role {
 
     @Column(nullable = false)
     private String name;
-
+    private Boolean isActive;
     private String description;
 
     @Column(name = "is_system")

@@ -28,12 +28,14 @@ public class RoleService {
         }
 
         Role role = roleMapper.toEntity(request);
+        role.setIsActive(true);
         return roleMapper.toResponse(roleRepository.save(role));
     }
     
     public List<RoleResponse> getAll() {
         return roleRepository.findAll().stream()
                 .filter(r -> Boolean.FALSE.equals(r.getIsDeleted()))
+                .filter(r -> Boolean.TRUE.equals(r.getIsActive()))
                 .map(roleMapper::toResponse)
                 .toList();
     }
@@ -75,10 +77,43 @@ public class RoleService {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
+        if (Boolean.TRUE.equals(role.getIsDeleted())) {
+            throw new RuntimeException("Role is deleted");
+        }
+
+        if (!Boolean.TRUE.equals(role.getIsActive())) {
+            throw new RuntimeException("Role is inactive");
+        }
+
         List<Permission> permissions = permissionRepository.findAllById(permissionIds);
 
         role.setPermissions(new HashSet<>(permissions));
 
         roleRepository.save(role);
     }
+
+    public void enable(UUID id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        role.setIsActive(true);
+        role.setUpdatedAt(LocalDateTime.now());
+
+        roleRepository.save(role);
+    }
+
+    public void disable(UUID id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        if (Boolean.TRUE.equals(role.getIsSystem())) {
+            throw new RuntimeException("Cannot disable system role");
+        }
+
+        role.setIsActive(false);
+        role.setUpdatedAt(LocalDateTime.now());
+
+        roleRepository.save(role);
+    }
+
 }
