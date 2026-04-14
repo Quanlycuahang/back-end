@@ -35,7 +35,7 @@ public class RoleService {
     public List<RoleResponse> getAll() {
         return roleRepository.findAll().stream()
                 .filter(r -> Boolean.FALSE.equals(r.getIsDeleted()))
-                .filter(r -> Boolean.TRUE.equals(r.getIsActive()))
+//                .filter(r -> Boolean.TRUE.equals(r.getIsActive()))
                 .map(roleMapper::toResponse)
                 .toList();
     }
