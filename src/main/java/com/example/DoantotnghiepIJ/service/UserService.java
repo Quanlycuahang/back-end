@@ -19,10 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -31,26 +28,16 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
     private final RoleRepository roleRepository;
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       CloudinaryService cloudinaryService, RoleRepository roleRepository) {
+                       CloudinaryService cloudinaryService,
+                       RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.cloudinaryService = cloudinaryService;
         this.roleRepository = roleRepository;
     }
-
-    public void assignRoles(Long userId, List<UUID> roleIds) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        List<Role> roles = roleRepository.findAllById(roleIds);
-
-        user.setRoles(new HashSet<>(roles));
-        userRepository.save(user);
-    }
-
 
     // ===================== GET ALL =====================
     public Page<User> getUsers(String keyword, UserStatus status, int page, int size) {
@@ -77,13 +64,13 @@ public class UserService {
     }
 
     // ===================== CREATE =====================
+    @Transactional
     public User createUser(CreateUserDto request) {
 
         if (request == null) {
             throw new BadRequestException("Request is required");
         }
 
-        // ===== REQUIRED =====
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new BadRequestException("Email is required");
         }
@@ -92,25 +79,15 @@ public class UserService {
             throw new BadRequestException("Password is required");
         }
 
-        // ===== TRIM =====
         String email = request.getEmail().trim().toLowerCase();
         String phone = request.getPhone() != null ? request.getPhone().trim() : null;
         String password = request.getPassword().trim();
         String fullName = request.getFullName() != null ? request.getFullName().trim() : null;
 
-        // ===== VALIDATE =====
         UtilsValidate.validateEmail(email);
         UtilsValidate.validatePassword(password);
-        if (phone != null) {
-            UtilsValidate.validatePhone(phone);
-        }
+        if (phone != null) UtilsValidate.validatePhone(phone);
 
-        if (request.getDateOfBirth() != null &&
-                request.getDateOfBirth().isAfter(LocalDateTime.now())) {
-            throw new BadRequestException("Date of birth is invalid");
-        }
-
-        // ===== CHECK DUPLICATE =====
         userRepository.findByEmail(email)
                 .ifPresent(u -> { throw new BadRequestException("Email already exists"); });
 
@@ -119,28 +96,25 @@ public class UserService {
                     .ifPresent(u -> { throw new BadRequestException("Phone already exists"); });
         }
 
-        // ===== MAP DTO → ENTITY =====
+        // lấy role mặc định
+        Role roleUser = roleRepository.findByCode("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Role USER not found"));
+
         User user = new User();
         user.setEmail(email);
         user.setPhone(phone);
         user.setFullName(fullName);
         user.setDateOfBirth(request.getDateOfBirth());
-
-        // 🔥 QUAN TRỌNG NHẤT
         user.setPasswordHash(passwordEncoder.encode(password));
-
         user.setStatus(UserStatus.ACTIVE);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
         user.setDeleted(false);
+        user.setRole(roleUser); // ✅ 1 user - 1 role
 
         return userRepository.save(user);
     }
 
     // ===================== UPDATE =====================
     public User updateUser(Long id, User request) {
-
-        if (id == null) throw new BadRequestException("Id is required");
 
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -153,12 +127,10 @@ public class UserService {
             throw new BadRequestException("User is disabled");
         }
 
-        // ===== EMAIL =====
         if (request.getEmail() != null) {
             String email = request.getEmail().trim().toLowerCase();
 
             if (!email.equals(existingUser.getEmail())) {
-
                 UtilsValidate.validateEmail(email);
 
                 userRepository.findByEmail(email)
@@ -168,12 +140,10 @@ public class UserService {
             }
         }
 
-        // ===== PHONE =====
         if (request.getPhone() != null) {
             String phone = request.getPhone().trim();
 
             if (!phone.equals(existingUser.getPhone())) {
-
                 UtilsValidate.validatePhone(phone);
 
                 userRepository.findByPhone(phone)
@@ -183,7 +153,6 @@ public class UserService {
             }
         }
 
-        // ===== OTHER FIELDS =====
         if (request.getFullName() != null) {
             existingUser.setFullName(request.getFullName().trim());
         }
@@ -207,20 +176,47 @@ public class UserService {
             existingUser.setStatus(request.getStatus());
         }
 
-        // ===== PASSWORD =====
         if (request.getPasswordHash() != null) {
-
             String password = request.getPasswordHash().trim();
-
             UtilsValidate.validatePassword(password);
-
             existingUser.setPasswordHash(passwordEncoder.encode(password));
         }
 
-        existingUser.setUpdatedAt(LocalDateTime.now());
-
         return userRepository.save(existingUser);
     }
+
+    // ===================== UPDATE ROLE =====================
+    @Transactional
+    public void updateUserRole(Long userId, String roleCode) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Role role = roleRepository.findByCode(roleCode)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+
+        user.setRole(role);
+
+        userRepository.save(user);
+    }
+
+    // ===================== UPDATE STATUS =====================
+    @Transactional
+    public void updateUserStatus(Long userId, UserStatus status) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (status == null) {
+            throw new BadRequestException("Status is required");
+        }
+
+        user.setStatus(status);
+        userRepository.save(user);
+    }
+
+    // ===================== UPLOAD AVATAR =====================
+
 
     // ===================== DELETE =====================
     public void deleteUser(Long id) {
@@ -228,91 +224,8 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (Boolean.TRUE.equals(user.getDeleted())) {
-            throw new BadRequestException("User already deleted");
-        }
-
         user.setDeleted(true);
-        user.setUpdatedAt(LocalDateTime.now());
-
         userRepository.save(user);
-    }
-
-    // ===================== STATUS =====================
-    public User updateUserStatus(Long id, UserStatus status) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (Boolean.TRUE.equals(user.getDeleted())) {
-            throw new BadRequestException("User has been deleted");
-        }
-
-        user.setStatus(status);
-        user.setUpdatedAt(LocalDateTime.now());
-
-        return userRepository.save(user);
-    }
-
-    // ===================== LOGIN =====================
-    public User login(String email, String password) {
-
-        if (email == null || password == null) {
-            throw new BadRequestException("Email and password are required");
-        }
-
-        email = email.trim().toLowerCase();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new BadRequestException("User is disabled");
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new BadRequestException("Invalid password");
-        }
-
-        return user;
-    }
-
-    // ===================== UPLOAD AVATAR =====================
-    @Transactional
-    public String uploadAvatar(Long userId, MultipartFile file) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("File is empty");
-        }
-
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new BadRequestException("File too large (max 5MB)");
-        }
-
-        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            throw new BadRequestException("File must be image");
-        }
-
-        if (user.getPublicId() != null && !user.getPublicId().isBlank()) {
-            try {
-                cloudinaryService.delete(user.getPublicId());
-            } catch (Exception ignored) {}
-        }
-
-        Map result = cloudinaryService.upload(file);
-
-        String url = result.get("secure_url").toString();
-        String publicId = result.get("public_id").toString();
-
-        user.setAvatarUrl(url);
-        user.setPublicId(publicId);
-
-        userRepository.save(user);
-
-        return url;
     }
 
     // ===================== STATISTICS =====================

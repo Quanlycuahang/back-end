@@ -44,13 +44,13 @@ public class SecurityConfig {
 
                         // ADMIN API
 //                        .requestMatchers("/admin/**").authenticated()
-                                .requestMatchers("/admin/**").permitAll()
+                                .requestMatchers("/admin/**", "/api/v1/admin/**", "/api/attendances/**", "/api/orders/**").permitAll()
                         // OTHER
-                     //   .anyRequest().authenticated()
-                        .anyRequest().permitAll()
-                );
+                        .anyRequest().authenticated()
+//                        .anyRequest().permitAll()
+                )
 
-                //.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

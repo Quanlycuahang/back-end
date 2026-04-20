@@ -28,7 +28,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     SELECT u FROM User u
     WHERE 
         u.deleted = false
-        AND (
+        AND (   
             :keyword IS NULL OR
             LOWER(u.fullName) LIKE %:keyword% OR
             LOWER(u.email) LIKE %:keyword% OR

@@ -92,6 +92,15 @@ public class RoleService {
         roleRepository.save(role);
     }
 
+    public List<UUID> getPermissionIdsByRole(UUID roleId) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        return role.getPermissions()
+                .stream()
+                .map(Permission::getId)
+                .toList();
+    }
     public void enable(UUID id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Role not found"));

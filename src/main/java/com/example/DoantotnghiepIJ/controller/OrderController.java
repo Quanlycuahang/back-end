@@ -22,7 +22,7 @@ public class OrderController {
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
 
-        // ❗ check userId
+        // check userId
         if (order.getUserId() == null || order.getUserId().isEmpty()) {
             throw new RuntimeException("userId is required");
         }
@@ -47,7 +47,7 @@ public class OrderController {
     }
 
     // =========================
-    // 🔥 LẤY ĐƠN THEO USER
+    // LẤY ĐƠN THEO USER
     // =========================
     @GetMapping("/user/{userId}")
     public List<Order> getOrdersByUser(@PathVariable String userId) {

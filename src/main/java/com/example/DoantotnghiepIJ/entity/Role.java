@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
 @Entity
 @Table(name = "roles")
 @Getter
@@ -25,6 +24,7 @@ public class Role {
 
     @Column(nullable = false)
     private String name;
+
     private Boolean isActive;
     private String description;
 
@@ -39,6 +39,7 @@ public class Role {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "role_permissions",
@@ -46,6 +47,7 @@ public class Role {
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     private Set<Permission> permissions = new HashSet<>();
+
     @PrePersist
     public void prePersist() {
         if (isDeleted == null) {

@@ -54,8 +54,11 @@ public class RoleController {
         roleService.enable(id);
         return "Role enabled successfully";
     }
-
-    // ✅ Disable role
+    @GetMapping("/{roleId}/permissions")
+    public List<UUID> getPermissionsByRole(@PathVariable UUID roleId) {
+        return roleService.getPermissionIdsByRole(roleId);
+    }
+    //  Disable role
     @PutMapping("/{id}/disable")
     public String disable(@PathVariable UUID id) {
         roleService.disable(id);

@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -25,6 +24,7 @@ public class UserController {
 
     private final UserService userService;
     private final MenuItemService menuItemService;
+
     public UserController(UserService userService, MenuItemService menuItemService) {
         this.userService = userService;
         this.menuItemService = menuItemService;
@@ -45,8 +45,7 @@ public class UserController {
     @Operation(summary = "Lấy thông tin user")
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @Operation(summary = "Lấy danh sách user")
@@ -61,6 +60,7 @@ public class UserController {
                 userService.getUsers(keyword, status, page, size)
         );
     }
+
     @Operation(summary = "Xóa user")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
@@ -68,43 +68,33 @@ public class UserController {
         return ResponseEntity.ok("Deleted user with id: " + id);
     }
 
-
+    // update status
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
             @RequestBody UpdateUserDto request
     ) {
-        return ResponseEntity.ok(
-                userService.updateUserStatus(id, request.getStatus())
-        );
+        userService.updateUserStatus(id, request.getStatus());
+        return ResponseEntity.ok("Update status success");
     }
 
-//    upload ảnh
-    @PostMapping("/upload-avatar")
-    public ResponseEntity<?> uploadAvatar(
-            @RequestParam("file") MultipartFile file
-    ) {
+    // upload avatar
 
-        Long userId = 1L; // TODO: lấy từ JWT
 
-        String url = userService.uploadAvatar(userId, file);
-
-        return ResponseEntity.ok(Map.of(
-                "avatarUrl", url
-        ));
-    }
-//    Dashboard thống kê user
+    // statistics
     @GetMapping("/statistics")
     public UserStatisticsDto getStatistics() {
         return userService.getUserStatistics();
     }
 
-
-    @PostMapping("/{userId}/roles")
-    public void assignRoles(
+    // ✅ update role (1 user - 1 role)
+    @PutMapping("/{userId}/roles")
+    public ResponseEntity<?> updateUserRole(
             @PathVariable Long userId,
-            @RequestBody List<UUID> roleIds
+            @RequestBody List<String> roleCodes
     ) {
-        userService.assignRoles(userId, roleIds);
+        userService.updateUserRole(userId, roleCodes.get(0));
+        return ResponseEntity.ok("Update role success");
     }
+
 }
